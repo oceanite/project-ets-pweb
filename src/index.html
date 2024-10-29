@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WhatsApp-like Chat App</title>
+    <title>WhatsApp Chat Logger</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css" />
@@ -17,30 +17,30 @@
             <!-- Search Bar -->
             <div class="p-3">
                 <h3 class="text-white">WhatsApp Logger</h3>
-                <input type="text" class="form-control search-bar" placeholder="Search contacts...">
+                <input type="text" class="form-control search-contact" placeholder="Search">
             </div>
             <div class="list-group list-group-flush">
-                <a href="#" class="list-group-item list-group-item-action">
-                    <div class="d-flex w-100 justify-content-between">
-                        <h5 class="mb-1">John Doe</h5>
-                        <small>3 mins ago</small>
+                <a href="#" class="contact-list list-group-item list-group-item-action d-flex align-items-center">
+                    <img src="profile-placeholder.png" alt="Profile" class="profile-pic">
+                    <div class="row w-100">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h5 class="nama-kontak mb-1">John Doe</h5>
+                            <small class="last-chat">10:00 PM</small>
+                        </div>
+                        <p class="message-preview mb-1">Lorem ipsum dolor sit amet...</p>
                     </div>
-                    <p class="mb-1">Hey, how's it going?</p>
                 </a>
-                <a href="#" class="list-group-item list-group-item-action">
-                    <div class="d-flex w-100 justify-content-between">
-                        <h5 class="mb-1">Jane Smith</h5>
-                        <small>10 mins ago</small>
+                <a href="#" class="contact-list list-group-item list-group-item-action d-flex align-items-center">
+                    <img src="profile-placeholder.png" alt="Profile" class="profile-pic">
+                    <div class="row w-100">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h5 class="nama-kontak mb-1">Jane Doe</h5>
+                            <small class="last-chat">10:00 PM</small>
+                        </div>
+                        <p class="message-preview mb-1">Consectetur adipiscing elit.</p>
                     </div>
-                    <p class="mb-1">Are you coming to the meeting?</p>
                 </a>
-                <a href="#" class="list-group-item list-group-item-action">
-                    <div class="d-flex w-100 justify-content-between">
-                        <h5 class="mb-1">Sam Wilson</h5>
-                        <small>1 hour ago</small>
-                    </div>
-                    <p class="mb-1">I'll send you the documents.</p>
-                </a>
+                <!-- Repeat the list item for more contacts -->
             </div>
         </div>
 
@@ -48,40 +48,36 @@
         <div class="col-md-8 chat-main p-0">
             <!-- Chat header with search and settings -->
             <div class="chat-header d-flex align-items-center justify-content-between">
-                <div class="d-flex align-items-center">
-                    <h5 class="mb-0 text-white">John Doe</h5>
-
+                <div class="d-flex align-items-start">
+                    <img src="profile-placeholder.png" alt="Profile" class="profile-pic">
+                    <div class="d-flex flex-column align-items-start">
+                        <h5 class="nama-kontak mb-0 text-white">John Doe</h5>
+                        <small class="last-chat">Last chat on 10:00 PM</small>
+                    </div>
                 </div>
                 <div class="d-flex align-items-center">
-                    <!-- Search input in header -->
-                    <input type="text" class="form-control search-input me-2" placeholder="Search messages...">
-                    <!-- Settings icon -->
+                    <input type="text" class="form-control search-message me-2" placeholder="Search messages...">
                     <i class="bi bi-gear settings-icon"></i>
                 </div>
             </div>
+            
 
             <!-- Chat body -->
-            <div class="chat-body">
-                <div class="message received">
-                    <div class="message-received">
-                        Hey! How's it going?
+            <div class="chat-body p-3">
+                <div class="message received mb-2">
+                    <div class="message-bubble">
+                        Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+                        <small class="timestamp">10:00 PM</small>
                     </div>
-                    <small class="text-white">3 mins ago</small>
                 </div>
-                <div class="message sent">
-                    <div class="message-sent">
-                        I'm good! How about you?
+                <div class="message sent mb-2">
+                    <div class="message-bubble">
+                        Nullam non.
+                        <small class="timestamp">10:00 PM</small>
                     </div>
-                    <small class="text-white">Just now</small>
                 </div>
-                <div class="message received">
-                    <div class="message-received">
-                        I'm doing well too. Thanks for asking!
-                    </div>
-                    <small class="text-white">1 min ago</small>
-                </div>
+                <!-- Repeat for more messages -->
             </div>
-
         </div>
     </div>
 </div>
@@ -90,6 +86,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 <!-- Bootstrap Icons -->
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
-
+<!-- Main JS -->
+<script src="main.js"></script>
 </body>
 </html>
