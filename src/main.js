@@ -1,5 +1,3 @@
-// script.js
-
 // Selectors for contact list and chat body
 const searchContact = document.querySelector('.search-contact');
 const contactListItems = document.querySelectorAll('.contact-list');
@@ -64,7 +62,7 @@ function loadChatHistory(contactName) {
 }
 
 // Event listener for selecting a contact
-contactList.forEach(contact => {
+contactListItems.forEach(contact => {
     contact.addEventListener('click', function () {
         const contactName = this.querySelector('.nama-kontak').textContent;
         document.querySelector('.chat-header .nama-kontak').textContent = contactName;
