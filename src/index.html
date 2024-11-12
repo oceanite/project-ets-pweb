@@ -19,28 +19,8 @@
                 <h3 class="text-white">WhatsApp Logger</h3>
                 <input type="text" class="form-control search-contact" placeholder="Search">
             </div>
-            <div class="list-group list-group-flush">
-                <a href="#" class="contact-list list-group-item list-group-item-action d-flex align-items-center">
-                    <img src="profile-placeholder.png" alt="Profile" class="profile-pic">
-                    <div class="row w-100">
-                        <div class="d-flex w-100 justify-content-between">
-                            <h5 class="nama-kontak mb-1">John Doe</h5>
-                            <small class="last-chat">10:00 PM</small>
-                        </div>
-                        <p class="message-preview mb-1">Lorem ipsum dolor sit amet...</p>
-                    </div>
-                </a>
-                <a href="#" class="contact-list list-group-item list-group-item-action d-flex align-items-center">
-                    <img src="profile-placeholder.png" alt="Profile" class="profile-pic">
-                    <div class="row w-100">
-                        <div class="d-flex w-100 justify-content-between">
-                            <h5 class="nama-kontak mb-1">Jane Doe</h5>
-                            <small class="last-chat">10:00 PM</small>
-                        </div>
-                        <p class="message-preview mb-1">Consectetur adipiscing elit.</p>
-                    </div>
-                </a>
-                <!-- Repeat the list item for more contacts -->
+            <div class="list-group list-group-flush" id="chatrooms-list">
+                <!-- Chatrooms will be inserted here -->
             </div>
         </div>
 
@@ -48,35 +28,13 @@
         <div class="col-md-8 chat-main p-0">
             <!-- Chat header with search and settings -->
             <div class="chat-header d-flex align-items-center justify-content-between">
-                <div class="d-flex align-items-start">
-                    <img src="profile-placeholder.png" alt="Profile" class="profile-pic">
-                    <div class="d-flex flex-column align-items-start">
-                        <h5 class="nama-kontak mb-0 text-white">John Doe</h5>
-                        <small class="last-chat">Last chat on 10:00 PM</small>
-                    </div>
-                </div>
-                <div class="d-flex align-items-center">
-                    <input type="text" class="form-control search-message me-2" placeholder="Search messages...">
-                    <i class="bi bi-gear settings-icon"></i>
-                </div>
+                
             </div>
-            
 
             <!-- Chat body -->
-            <div class="chat-body p-3">
-                <div class="message received mb-2">
-                    <div class="message-bubble">
-                        Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-                        <small class="timestamp">10:00 PM</small>
-                    </div>
-                </div>
-                <div class="message sent mb-2">
-                    <div class="message-bubble">
-                        Nullam non.
-                        <small class="timestamp">10:00 PM</small>
-                    </div>
-                </div>
-                <!-- Repeat for more messages -->
+            <div class="chat-body p-3" id="chatContainer">
+                <!-- Chats/Messages will be dynamically inserted -->
+                
             </div>
         </div>
     </div>
