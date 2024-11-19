@@ -5,7 +5,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Selectors for common DOM elements
     const searchContact = document.querySelector('.search-contact');
     const chatBody = document.getElementById('chatContainer');
-    const chatMain = document.querySelector('.chat-main');
 
     // Fetch chatroom data and display it in the sidebar
     async function fetchChatrooms() {
@@ -44,13 +43,15 @@ document.addEventListener('DOMContentLoaded', () => {
         addChatroomClickListeners();
     }
 
-    // Create a single chatroom item element
     function createChatroomItem(chatroom, contact, lastTime) {
         const chatroomItem = document.createElement('a');
         chatroomItem.href = "#";
         chatroomItem.classList.add("contact-list", "list-group-item", "list-group-item-action", "d-flex", "align-items-center");
         chatroomItem.dataset.remoteId = chatroom.chatID;
-
+    
+        // Store messages in a data attribute for filtering
+        chatroomItem.setAttribute('data-messages', JSON.stringify(chatroom.messages.map(msg => ({ body: msg.body }))));
+    
         chatroomItem.innerHTML = `
             <img src="./img/default-profile-picture-01.png" alt="Profile" class="profile-pic">
             <div class="row w-100">
@@ -62,7 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
         return chatroomItem;
-    }
+    }    
 
     // Format contact name based on chat ID
     function formatContactName(chatID) {
@@ -93,20 +94,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 const remoteId = contact.dataset.remoteId;
                 const contactName = contact.querySelector('.nama-kontak').textContent;
                 setupChatHeader(contactName);
+                revealChatInput();
                 loadChatHistory(remoteId);
             });
         });
     }
 
-    // Set up or update the chat header
+    // Set up the chat header
     function setupChatHeader(contactName) {
-        const chatMain = document.querySelector('.chat-main'); // Ensure chatMain is correctly selected
+        const chatMain = document.querySelector('.chat-main');
         const chatHeader = chatMain.querySelector('.chat-header');
     
         if (!chatHeader) {
             console.error('chatHeader not found!');
-            return; // Prevent errors if chatHeader doesn't exist
+            return;
         }
+
+        chatHeader.classList.remove('d-none');
     
         chatHeader.innerHTML = '';
         chatHeader.innerHTML = `
@@ -118,10 +122,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             </div>
             <div class="d-flex align-items-center">
-                <input type="text" class="form-control search-message me-2" placeholder="Search messages...">
+                <input type="text" class="search-message form-control me-2" placeholder="Search messages...">
                 <i class="bi bi-gear settings-icon"></i>
             </div>
         `;
+    
+        // Attach event listener for searching messages
+        const searchMessage = chatHeader.querySelector('.search-message');
+        searchMessage.addEventListener('input', function (e) {
+            const searchTerm = e.target.value.toLowerCase().trim();
+            const messages = chatBody.querySelectorAll('.message');
+    
+            messages.forEach(message => {
+                const messageText = message.querySelector('.message-bubble').textContent.toLowerCase();
+    
+                if (messageText.includes(searchTerm)) {
+                    message.classList.remove('d-none');
+                } else {
+                    message.classList.add('d-none');
+                }
+            });
+        });
+    }
+
+    // Reveal the chat input area
+    function revealChatInput() {
+        const ChatInput = document.querySelector('.chat-input');
+        ChatInput.classList.remove('d-none');
     }
 
     // Load chat history for the selected contact
@@ -150,7 +177,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const lastChatTime = formatLastChatTime(messages[messages.length - 1].timestamp);
         document.querySelector('.chat-header .last-time').textContent = `Last chat on ${lastChatTime}`;
 
+        let lastDate = null;
+
         messages.forEach(msg => {
+            const currentDate = new Date(msg.timestamp * 1000);
+            const formattedDate = currentDate.toDateString();
+
+            // Insert a time separator if the date changes
+            if (formattedDate !== lastDate) {
+                const separator = document.createElement('div');
+                separator.classList.add('time-separator', 'd-flex', 'align-items-center', 'justify-content-center');
+                separator.textContent = formatTimeSeparator(currentDate);
+                chatBody.appendChild(separator);
+                lastDate = formattedDate; // Update last date
+            }
+
             const messageDiv = document.createElement('div');
             if (msg.fromMe) {
                 messageDiv.classList.add('message', 'sent', 'd-flex', 'justify-content-end');
@@ -172,32 +213,60 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Format date for time separator
+    function formatTimeSeparator(date) {
+        const today = new Date();
+        const yesterday = new Date();
+        yesterday.setDate(today.getDate() - 1);
+    
+        if (date.toDateString() === today.toDateString()) {
+            return 'Today';
+        } else if (date.toDateString() === yesterday.toDateString()) {
+            return 'Yesterday';
+        } else {
+            return date.toLocaleDateString(); // Display full date
+        }
+    }
+
     // Format timestamp to "hh:mm AM/PM"
     function formatTimestamp(timestamp) {
         return new Date(timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
     }
 
-    // Filter contacts in the sidebar based on search input
+    // Filter contacts and associated messages in the sidebar
     searchContact.addEventListener('input', function () {
         const searchQuery = searchContact.value.toLowerCase().trim();
+
         document.querySelectorAll('.contact-list').forEach(contact => {
             const contactName = contact.querySelector('.nama-kontak').textContent.toLowerCase();
-            if (contactName.includes(searchQuery)) {
-                contact.classList.remove("d-none");
+            const messages = JSON.parse(contact.getAttribute('data-messages') || "[]"); // Safely parse data-messages
+
+            // Check if contact name or any associated message matches the query
+            const isNameMatch = contactName.includes(searchQuery);
+            const isMessageMatch = messages.some(message => message.body.toLowerCase().includes(searchQuery));
+
+            if (isNameMatch || isMessageMatch) {
+                contact.classList.remove('d-none');
             } else {
-                contact.classList.add("d-none");
+                contact.classList.add('d-none');
             }
         });
     });
 
     // Search messages within a conversation
-    chatMain.addEventListener('input', function (e) {
-        if (e.target.classList.contains('search-message')) {
-            const searchTerm = e.target.value.toLowerCase();
-            chatBody.querySelectorAll('.message').forEach(message => {
-                const messageText = message.querySelector('.message-bubble').textContent.toLowerCase();
-                message.style.display = messageText.includes(searchTerm) ? '' : 'none';
-            });
-        }
-    });
+    searchMessage.addEventListener('input', function (e) {
+        const searchTerm = e.target.value.toLowerCase().trim();
+        const messages = chatBody.querySelectorAll('.message');
+
+        messages.forEach(message => {
+            const messageText = message.querySelector('.message-bubble').textContent.toLowerCase();
+
+            if (messageText.includes(searchTerm)) {
+                message.classList.remove('d-none');
+            } else {
+                message.classList.add('d-none');
+            }
+        });
+    });   
+ 
 });
