@@ -2,6 +2,10 @@ const express = require("express");
 const cors = require("cors");
 const connectDB = require('./config/db');
 const Message = require("./models/chat");
+const Media = require("./models/media");
+const { default: mongoose } = require("mongoose");
+const multer = require('multer');
+const path = require('path');
 const port = 3003;
 
 connectDB();
@@ -13,6 +17,18 @@ app.use(express.json());
 app.listen(port, () => {
     console.log(`Backend menggunakan express di port ${port}`);
 });
+
+// Configure Multer to save files to a specific folder
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+      cb(null, 'uploads/'); // Folder to store files
+    },
+    filename: (req, file, cb) => {
+      cb(null, `${Date.now()}-${file.originalname}`); // Unique file name
+    }
+});
+
+const upload = multer({ storage });
 
 // Endpoint untuk mendapatkan semua riwayat chat
 app.get("/api/chats", async (req, res) => {
@@ -36,17 +52,24 @@ app.get("/api/chats/:remote", async (req, res) => {
 
         // Query database for chat history based on remote id
         const chatHistory = await Message.find(
-            { "id.remote": remote }, // Filter by remote id
+            { "localId.remote": remote }, // Filter by remote id
             {
                 _id: 0,                // Exclude MongoDB's default _id field
-                "id": 1,               // Include id field
+                "localId": 1,               // Include id field
+                "_data": {
+                    "notifyName": 1,
+                    "quotedMsg": 1,
+                    "quotedStanzaID": 1,
+                    "quotedParticipant": 1
+                },  
                 "body": 1,             // Include message body
                 "type": 1,             // Include type
                 "timestamp": 1,        // Include timestamp
                 "from": 1,             // Include sender
                 "to": 1,               // Include receiver
                 "author": 1,           // Include author
-                "fromMe": 1            // Include boolean fromMe
+                "fromMe": 1,            // Include boolean fromMe
+                "hasQuotedMsg": 1
             }
         ).sort({ "timestamp": 1 }); // Sort by timestamp ascending
 
@@ -78,7 +101,7 @@ app.get("/api/chatrooms", async (req, res) => {
             {
                 // Group data berdasarkan id.remote
                 $group: {
-                    _id: "$id.remote",
+                    _id: "$localId.remote",
                     lastMessage: { $last: "$$ROOT" },
                     messages: { $push: "$$ROOT" }
                 }
@@ -88,6 +111,7 @@ app.get("/api/chatrooms", async (req, res) => {
                 $project: {
                     _id: 0,
                     chatID: "$_id",
+                    notifyName: "$messages._data.notifyName",
                     last_time: "$lastMessage.timestamp",
                     last_chat: "$lastMessage.body",
                     messages: "$messages"
@@ -110,3 +134,33 @@ app.get("/api/chatrooms", async (req, res) => {
         res.status(500).json({ message: `Error fetching chatroom`, error });
     }
 });
+
+// Endpoint untuk mengirim
+app.post("/api/send", async (req, res) => {
+    try {
+        const messageData = req.body.message;
+
+        // Validate required fields
+        if (!messageData.body || !messageData.timestamp || !messageData.from || !messageData.to) {
+            return res.status(400).json({ error: 'Missing required fields' });
+        }
+
+        // Create a new message document
+        const newMessage = new Message(messageData);
+
+        // Save the message
+        await newMessage.save();
+
+        // Return success response
+        res.status(201).json({
+            success: true,
+            message: 'Message sent successfully',
+            data: newMessage
+        });
+    } catch (error) {
+        console.error('Error saving message:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+

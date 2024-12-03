@@ -2,9 +2,38 @@ document.addEventListener('DOMContentLoaded', () => {
     // Fetch and display chatrooms when the page loads
     fetchChatrooms();
 
+    // UserID of current user:
+    const thisUserID = "6285174388804@c.us";  
+
     // Selectors for common DOM elements
     const searchContact = document.querySelector('.search-contact');
     const chatBody = document.getElementById('chatContainer');
+    const chatInput = document.querySelector('.chat-input');
+    const chatInputField = document.getElementById("message-input-form");
+    const mediaInput = document.getElementById('mediaInput');
+    const addMediaButton = document.querySelector('.btn-add-media');
+
+    let currentChatroomID = null;
+    
+    // Clear the textarea content 
+    chatInputField.value = "";
+
+    function saveDraft(chatroomId, draft) {
+        if (chatroomId) {
+            localStorage.setItem(`draft_${chatroomId}`, draft);
+        }
+    }
+
+    function loadDraft(chatroomId) {
+        const draft = localStorage.getItem(`draft_${chatroomId}`);
+        return draft || ""; // Return empty string if no draft exists
+    }
+
+    function clearDraft(chatroomId) {
+        if (chatroomId) {
+            localStorage.removeItem(`draft_${chatroomId}`);
+        }
+    }
 
     // Fetch chatroom data and display it in the sidebar
     async function fetchChatrooms() {
@@ -12,7 +41,16 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch("http://localhost:3003/api/chatrooms");
             const chatrooms = await response.json();
-            console.log(chatrooms);
+
+            // Check for drafts and add a `hasDraft` property
+            chatrooms.forEach(chatroom => {
+                const draft = localStorage.getItem(`draft_${chatroom.chatID}`);
+                chatroom.hasDraft = !!draft; // Boolean: true if draft exists
+            });
+
+            // Sort chatrooms: prioritize those with drafts
+            chatrooms.sort((a, b) => b.hasDraft - a.hasDraft);
+
             displayChatrooms(chatrooms);
         } catch (error) {
             console.error('Error fetching chatrooms:', error);
@@ -31,8 +69,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;  // Skip this iteration if data is missing
             }
     
-            const chatID = chatroom.chatID;  // Note: changed from chatId to chatID
-            const contact = formatContactName(chatID);
+            const chatID = chatroom.chatID;
+            const contact = formatContactName(chatroom);
             const lastTime = formatLastChatTime(chatroom.last_time);
             const chatroomItem = createChatroomItem(chatroom, contact, lastTime);
             
@@ -47,27 +85,89 @@ document.addEventListener('DOMContentLoaded', () => {
         const chatroomItem = document.createElement('a');
         chatroomItem.href = "#";
         chatroomItem.classList.add("contact-list", "list-group-item", "list-group-item-action", "d-flex", "align-items-center");
-        chatroomItem.dataset.remoteId = chatroom.chatID;
     
         // Store messages in a data attribute for filtering
         chatroomItem.setAttribute('data-messages', JSON.stringify(chatroom.messages.map(msg => ({ body: msg.body }))));
     
-        chatroomItem.innerHTML = `
-            <img src="./img/default-profile-picture-01.png" alt="Profile" class="profile-pic">
-            <div class="row w-100">
-                <div class="d-flex w-100 justify-content-between">
-                    <h5 class="nama-kontak mb-1">${contact}</h5>
-                    <small class="last-time">${lastTime}</small>
+        if (chatroom.hasDraft) {
+            const draft = loadDraft(chatroom.chatID);
+            chatroomItem.innerHTML = `
+                <img src="./img/default-profile-picture-01.png" alt="Profile" class="profile-pic">
+                <div class="row w-100">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h5 class="contact-name mb-1">${contact}</h5>
+                        <small class="last-time">${lastTime}</small>
+                    </div>
+                    <p class="message-preview mb-1"><span style="color: #15976e;">Draft: </span>${draft.trim()}</p>
                 </div>
-                <p class="message-preview mb-1">${chatroom.last_chat}</p>
-            </div>
-        `;
+            `;
+        } else {
+            chatroomItem.innerHTML = `
+                <img src="./img/default-profile-picture-01.png" alt="Profile" class="profile-pic">
+                <div class="row w-100">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h5 class="contact-name mb-1">${contact}</h5>
+                        <small class="last-time">${lastTime}</small>
+                    </div>
+                    <p class="message-preview mb-1">${formatMsg(chatroom.last_chat)}</p>
+                </div>
+            `;
+        }
+
+        chatroomItem.dataset.remoteId = chatroom.chatID;
+        chatroomItem.dataset.lastChat = chatroom.last_chat;
+        chatroomItem.dataset.hasDraft = chatroom.hasDraft;
+        chatroomItem.dataset.lastTime = chatroom.last_time;
+        
         return chatroomItem;
-    }    
+    }
+    
+    function updateDraftIndicator(chatroom) {
+        const remoteId = chatroom.dataset.remoteId;
+        const lastChat = chatroom.dataset.lastChat;
+
+        if (chatroom.classList.contains('selected')) {
+            chatroom.querySelector('.message-preview').textContent = formatMsg(lastChat);
+        } else {
+            const draft = localStorage.getItem(`draft_${remoteId}`);
+            if (draft) {
+                chatroom.querySelector('.message-preview').innerHTML = `<span style="color: #15976e;">Draft: </span>${draft.trim()}`;
+            } else {
+                chatroom.querySelector('.message-preview').textContent = formatMsg(lastChat);
+            }
+        }
+    }
+
+    function sortChatrooms() {
+        const chatroomsList = document.getElementById('chatrooms-list');
+        const chatroomItems = Array.from(chatroomsList.children);
+    
+        chatroomItems.sort((a, b) => {
+            const aHasDraft = a.dataset.hasDraft === "true";
+            const bHasDraft = b.dataset.hasDraft === "true";
+            const aLastTime = Number(a.dataset.lastTime);
+            const bLastTime = Number(b.dataset.lastTime);
+    
+            // Prioritize chatrooms with drafts
+            if (bHasDraft !== aHasDraft) {
+                return bHasDraft - aHasDraft;
+            }
+    
+            // If both have drafts or both don't, sort by last chat time
+            return bLastTime - aLastTime;
+        });
+    
+        // Append sorted elements back into the chatrooms list
+        chatroomItems.forEach(item => chatroomsList.appendChild(item));
+    }
 
     // Format contact name based on chat ID
-    function formatContactName(chatID) {
-        return chatID.split('@')[0] || "Unknown Contact";
+    function formatContactName(chatroom) {
+        if (chatroom.chatID.includes("@c.us") && chatroom.notifyName != null) {
+            return chatroom.notifyName;
+        } else {
+            return chatroom.chatID.split('@')[0] || "Unknown Contact";
+        }
     }
 
     // Format the timestamp for last chat time display
@@ -87,15 +187,45 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function formatMsg(message) {
+        if (message.includes("<<") || message.includes(">>")) {
+            let indexLeft = message.indexOf("<<");
+            let indexRight = message.indexOf(">>");
+
+            if (indexLeft !== -1) {
+                return message.substring(indexLeft + 3).trim();
+            } else if (indexRight !== -1) {
+                return message.substring(indexRight + 3).trim();
+            }
+        } else {
+            return message;
+        }
+    }
+
     // Add click listeners to each chatroom item
     function addChatroomClickListeners() {
-        document.querySelectorAll('.contact-list').forEach(contact => {
+        const chatroomItem = document.querySelectorAll('.contact-list');
+        chatroomItem.forEach(contact => {
             contact.addEventListener('click', () => {
+                // Remove "selected" class from all chatrooms
+                chatroomItem.forEach(item => {
+                    item.classList.remove('selected');
+                    updateDraftIndicator(item);
+                });
+
+                // Add "selected" class to the clicked chatroom 
+                contact.classList.add('selected');
+                updateDraftIndicator(contact);
+                console.log(contact.dataset.hasDraft);
+
                 const remoteId = contact.dataset.remoteId;
-                const contactName = contact.querySelector('.nama-kontak').textContent;
+                const contactName = contact.querySelector('.contact-name').textContent;
+                currentChatroomID = remoteId;
+
                 setupChatHeader(contactName);
                 revealChatInput();
                 loadChatHistory(remoteId);
+                chatInputField.value = loadDraft(remoteId);
             });
         });
     }
@@ -117,7 +247,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="d-flex align-items-start">
                 <img src="./img/default-profile-picture-01.png" alt="Profile" class="profile-pic">
                 <div class="d-flex flex-column align-items-start">
-                    <h5 class="nama-kontak mb-0 text-white">${contactName}</h5>
+                    <h5 class="contact-name mb-0 text-white">${contactName}</h5>
                     <small class="last-time">Last chat on -</small>
                 </div>
             </div>
@@ -132,6 +262,7 @@ document.addEventListener('DOMContentLoaded', () => {
         searchMessage.addEventListener('input', function (e) {
             const searchTerm = e.target.value.toLowerCase().trim();
             const messages = chatBody.querySelectorAll('.message');
+            const separators = chatBody.querySelectorAll('.time-separator');
     
             messages.forEach(message => {
                 const messageText = message.querySelector('.message-bubble').textContent.toLowerCase();
@@ -142,14 +273,61 @@ document.addEventListener('DOMContentLoaded', () => {
                     message.classList.add('d-none');
                 }
             });
+
+            // Update time separator visibility
+            separators.forEach(separator => {
+                // Check if there are any visible messages after the separator
+                let nextElement = separator.nextElementSibling;
+                let hasVisibleMessages = false;
+
+                while (nextElement && !nextElement.classList.contains('time-separator')) {
+                    if (!nextElement.classList.contains('d-none')) {
+                        hasVisibleMessages = true;
+                        break;
+                    }
+                    nextElement = nextElement.nextElementSibling;
+                }
+
+                // Toggle visibility of the separator based on visible messages
+                if (hasVisibleMessages) {
+                    separator.classList.remove('d-none');
+                } else {
+                    separator.classList.add('d-none');
+                }
+            });
         });
     }
 
     // Reveal the chat input area
     function revealChatInput() {
-        const ChatInput = document.querySelector('.chat-input');
-        ChatInput.classList.remove('d-none');
+        chatInput.classList.remove('d-none');
     }
+
+    chatInputField.addEventListener("input", function () {
+        // Dynamically change the height of the textarea on input
+        chatInputField.style.height = "auto";
+        chatInputField.style.height = chatInputField.scrollHeight + "px";
+    
+        if (chatInputField.value !== "") {
+            saveDraft(currentChatroomID, chatInputField.value);
+    
+            const selectedChatroom = document.querySelector(`[data-remote-id="${currentChatroomID}"]`);
+            if (selectedChatroom) {
+                selectedChatroom.dataset.hasDraft = "true"; // Set the draft flag to false
+            }
+        } else {
+            clearDraft(currentChatroomID);
+    
+            // Update the `hasDraft` flag in the chatroom dataset
+            const selectedChatroom = document.querySelector(`[data-remote-id="${currentChatroomID}"]`);
+            if (selectedChatroom) {
+                selectedChatroom.dataset.hasDraft = "false"; // Set the draft flag to false
+            }
+        }
+    
+        // After saving or clearing the draft, re-sort the chatrooms
+        sortChatrooms();
+    });    
 
     // Load chat history for the selected contact
     async function loadChatHistory(remoteId) {
@@ -193,23 +371,77 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const messageDiv = document.createElement('div');
-            if (msg.fromMe) {
-                messageDiv.classList.add('message', 'sent', 'd-flex', 'justify-content-end');
-            } else { 
-                messageDiv.classList.add('message', 'received', 'd-flex'); 
+
+            if (currentChatroomID.includes("@g.us") && !msg.fromMe) {
+                // Group message (received)
+                const messageContainer = document.createElement('div');
+                messageContainer.classList.add('container');
+                messageContainer.innerHTML = `
+                    <div class="message received d-flex justify-content-start">
+                        <div class="d-flex">
+                            <img src="./img/default-profile-picture-01.png" alt="${msg.notifyName || msg.from.split('@')[0]}'s profile picture" class="profile-chat">
+                        </div>
+                        <div class="d-flex flex-column">
+                            <div class="notify-name">${msg._data.notifyName || msg.from.split('@')[0]}</div>
+                            <div class="message-bubble">
+                                <div class="message-body">${formatMsg(msg.body)}<div>
+                                <small class="timestamp">${formatTimestamp(msg.timestamp)}</small>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                if (msg.hasQuotedMsg) {
+                    messageBubble = messageContainer.querySelector('.message-bubble');
+                    const quotedMessage = document.createElement('div');
+                    quotedMessage.classList.add('quoted-message');
+
+                    let quotedParticipant = "";
+                    if (msg._data.quotedParticipant === thisUserID) {
+                        quotedParticipant = "You";
+                    } else {
+                        quotedParticipant = msg._data.quotedParticipant.split('@')[0];
+                    }
+
+                    quotedMessage.innerHTML = `
+                        <div class="notify-name">${quotedParticipant}</div>
+                        ${formatMsg(msg._data.quotedMsg.body)}
+                    `;
+
+                    messageBubble.insertBefore(quotedMessage, messageBubble.firstChild);
+                }
+                chatBody.appendChild(messageContainer);
+            } else {
+                if (msg.fromMe) {
+                    messageDiv.classList.add('message', 'sent', 'd-flex', 'justify-content-end');
+                } else {
+                    messageDiv.classList.add('message', 'received', 'd-flex', 'justify-content-start');
+                }
+                
+                const messageBubble = document.createElement('div');
+                messageBubble.classList.add('message-bubble');
+                if (msg.hasQuotedMsg) {
+                    const quotedMessage = document.createElement('div');
+                    quotedMessage.classList.add('quoted-message');
+                    quotedMessage.innerHTML = `
+                        <div class="notify-name">${msg._data.notifyName || msg._data.quotedParticipant.split('@')[0]}</div>
+                        ${formatMsg(msg._data.quotedMsg.body)}
+                    `;
+
+                    messageBubble.appendChild(quotedMessage);
+                }
+                messageBubble.innerHTML = `
+                    <div class="message-body">${formatMsg(msg.body)}<div>
+                `;
+
+                const timestamp = document.createElement('small');
+                timestamp.classList.add('timestamp');
+                timestamp.textContent = formatTimestamp(msg.timestamp);
+
+                messageBubble.appendChild(timestamp);
+                messageDiv.appendChild(messageBubble);
+                chatBody.appendChild(messageDiv);
             }
-            
-            const messageBubble = document.createElement('div');
-            messageBubble.classList.add('message-bubble');
-            messageBubble.textContent = msg.body;
-
-            const timestamp = document.createElement('small');
-            timestamp.classList.add('timestamp');
-            timestamp.textContent = formatTimestamp(msg.timestamp);
-
-            messageBubble.appendChild(timestamp);
-            messageDiv.appendChild(messageBubble);
-            chatBody.appendChild(messageDiv);
         });
     }
 
@@ -238,7 +470,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const searchQuery = searchContact.value.toLowerCase().trim();
 
         document.querySelectorAll('.contact-list').forEach(contact => {
-            const contactName = contact.querySelector('.nama-kontak').textContent.toLowerCase();
+            const contactName = contact.querySelector('.contact-name').textContent.toLowerCase();
             const messages = JSON.parse(contact.getAttribute('data-messages') || "[]"); // Safely parse data-messages
 
             // Check if contact name or any associated message matches the query
@@ -253,20 +485,123 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Search messages within a conversation
-    searchMessage.addEventListener('input', function (e) {
-        const searchTerm = e.target.value.toLowerCase().trim();
-        const messages = chatBody.querySelectorAll('.message');
-
-        messages.forEach(message => {
-            const messageText = message.querySelector('.message-bubble').textContent.toLowerCase();
-
-            if (messageText.includes(searchTerm)) {
-                message.classList.remove('d-none');
-            } else {
-                message.classList.add('d-none');
-            }
+    function generateID() {
+        return 'xxxxxxxxxxxxxx'.replace(/[x]/g, function () {
+            return (Math.random() * 16 | 0).toString(16);
         });
-    });   
- 
+    }
+
+    async function sendMessage() {
+        const messageContent = chatInputField.value.trim();
+        const files = mediaInput.files;
+
+        if (messageContent && files.length === 0) {
+            console.warn("Input field is empty");
+        }
+
+        const ID = generateID();
+
+        const messageData = {
+            _data: {
+                id: {
+                    fromMe: true,
+                    remote: currentChatroomID,
+                    id: ID,
+                    _serialized: `true_${currentChatroomID}_${ID}`,
+                },
+                body: messageContent,
+                type: "chat",
+                t: Math.floor(Date.now() / 1000),
+                from: thisUserID,
+                to: currentChatroomID,
+            },
+            localId: {
+                fromMe: true,
+                remote: currentChatroomID,
+                id: ID,
+                _serialized: `true_${currentChatroomID}_${ID}`,
+            },
+            body: messageContent,
+            type: "chat",
+            timestamp: Math.floor(Date.now() / 1000),
+            from: thisUserID,
+            to: currentChatroomID,
+            deviceType: "web",
+            fromMe: true,
+        }
+
+        if (files.length > 0) {
+            messageData.hasMedia = true;
+        }
+
+        try {
+            const response = await fetch(`http://localhost:3003/api/send`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(messageData),
+            });
+
+            if (!response.ok) {
+                const errorDetails = await response.json();
+                throw new Error(`Error mengirim pesan: ${errorDetails.error || response.statusText}`);                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          
+            }
+    
+            const result = await response.json();
+            console.log("Pesan berhasil dikirim:", result);
+
+            // Tampilkan pesan setelah berhasil mengirim
+            loadChatHistory(currentChatroomID);
+            // Hapus isi chat input field
+            chatInputField.value = "";
+            // Hapus draft dari local storage
+            clearDraft(currentChatroomID);
+            // Update tampilan list chatroom
+            fetchChatrooms();
+        } catch (error) {
+            console.error("Error saat mengirim pesan:", error);
+        }
+    }
+
+    document.querySelector('.btn-send').addEventListener("click", sendMessage);
+    chatInputField.addEventListener("keypress", function (e) {
+        if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    })
+
+    // Open file selector when attach button is clicked
+    addMediaButton.addEventListener("click", () => {
+        mediaInput.click();
+    });
+
+    // Handle file selection
+    mediaInput.addEventListener("change", function (e) {
+        const file = e.target.files;
+
+        if (file.length) {
+            Array.from(file).forEach(file => {
+                console.log = `Attach file: ${file.name}`;
+
+                const fileType = file.type;
+                if (fileType.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                        const img = document.createElement('img');
+                        img.src = reader.result;
+                        img.alt = file.name;
+                        img.style.maxWidth = "100px"; // Resize for preview
+                        chatInputField.appendChild(img);
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    const filePreview = document.createElement('p');
+                    filePreview.textContent = `File: ${file.name}`;
+                    chatInputField.appendChild(filePreview);
+                }
+            });
+        }
+    });
 });
