@@ -138,7 +138,7 @@ app.get("/api/chatrooms", async (req, res) => {
 // Endpoint untuk mengirim
 app.post("/api/send", async (req, res) => {
     try {
-        const messageData = req.body.message;
+        const messageData = req.body;
 
         // Validate required fields
         if (!messageData.body || !messageData.timestamp || !messageData.from || !messageData.to) {
