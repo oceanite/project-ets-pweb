@@ -64,12 +64,16 @@ document.addEventListener('DOMContentLoaded', () => {
         // Store messages in a data attribute for filtering
         chatroomItem.setAttribute('data-messages', JSON.stringify(chatroom.messages.map(msg => ({ body: msg.body }))));
     
-        chatroomItem.innerHTML = `
-            <img src="./img/default-profile-picture-01.png" alt="Profile" class="profile-pic">
-            <div class="row w-100">
-                <div class="d-flex w-100 justify-content-between">
-                    <h5 class="nama-kontak mb-1">${contact}</h5>
-                    <small class="last-time">${lastTime}</small>
+        if (chatroom.hasDraft) {
+            const draft = loadDraft(chatroom.chatID);
+            chatroomItem.innerHTML = `
+                <img src="./img/default-profile-picture-01.png" alt="Profile" class="profile-pic">
+                <div class="row w-100">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h5 class="contact-name mb-1">${contact}</h5>
+                        <small class="last-time">${lastTime}</small>
+                    </div>
+                    <p class="message-preview mb-1"><span style="color: #15976e;">Draft: </span>${draft.trim()}</p>
                 </div>
             `;
         } else {
