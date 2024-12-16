@@ -39,7 +39,9 @@ document.addEventListener("DOMContentLoaded", () => {
   async function fetchChatrooms() {
     console.log("Fetching chatrooms...");
     try {
-      const response = await fetch("http://localhost:3003/api/chatrooms");
+      const response = await fetch(
+        "http://import.meta.env.APP_BACKEND_BASEURL/api/chatrooms"
+      );
       const chatrooms = await response.json();
 
       // Check for drafts and add a `hasDraft` property
@@ -367,7 +369,7 @@ document.addEventListener("DOMContentLoaded", () => {
     chatBody.innerHTML = "";
     try {
       const response = await fetch(
-        `http://localhost:3003/api/chats/${remoteId}`
+        `http://import.meta.env.APP_BACKEND_BASEURL/api/chats/${remoteId}`
       );
       if (!response.ok)
         throw new Error(`Error fetching chat history: ${response.statusText}`);
@@ -610,13 +612,16 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
-      const response = await fetch(`http://localhost:3003/api/send`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(messageData),
-      });
+      const response = await fetch(
+        `http://import.meta.env.APP_BACKEND_BASEURL/api/send`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(messageData),
+        }
+      );
 
       if (!response.ok) {
         const errorDetails = await response.json();
