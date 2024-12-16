@@ -101,7 +101,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (chatroom.hasDraft) {
       const draft = loadDraft(chatroom.chatID);
       chatroomItem.innerHTML = `
-                <img src="img/default-group-picture-01.png" alt="Profile" class="profile-pic">
+                <img src="img/default-profile-picture-01.png" alt="Profile" class="profile-pic">
                 <div class="row w-100">
                     <div class="d-flex w-100 justify-content-between">
                         <h5 class="contact-name mb-1">${contact}</h5>
@@ -268,7 +268,7 @@ document.addEventListener("DOMContentLoaded", () => {
     chatHeader.innerHTML = "";
     chatHeader.innerHTML = `
             <div class="d-flex align-items-start">
-                <img src="./img/default-profile-picture-01.png" alt="Profile" class="profile-pic">
+                <img src="img/default-profile-picture-01.png" alt="Profile" class="profile-pic">
                 <div class="d-flex flex-column align-items-start">
                     <h5 class="contact-name mb-0 text-white">${contactName}</h5>
                     <small class="last-time">Last chat on -</small>
@@ -423,7 +423,7 @@ document.addEventListener("DOMContentLoaded", () => {
         messageContainer.innerHTML = `
                     <div class="message received d-flex justify-content-start">
                         <div class="d-flex">
-                            <img src="img\default-profile-picture-01.png" alt="${
+                            <img src="img/default-group-picture-01.png" alt="${
                               msg.notifyName || msg.from.split("@")[0]
                             }'s profile picture" class="profile-chat">
                         </div>
