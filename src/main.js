@@ -39,9 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
   async function fetchChatrooms() {
     console.log("Fetching chatrooms...");
     try {
-      const response = await fetch(
-        "http://import.meta.env.https://localhost:3003L/api/chatrooms"
-      );
+      const response = await fetch("APP_BACKEND_BASEURL/api/chatrooms");
       const chatrooms = await response.json();
 
       // Check for drafts and add a `hasDraft` property
@@ -369,7 +367,7 @@ document.addEventListener("DOMContentLoaded", () => {
     chatBody.innerHTML = "";
     try {
       const response = await fetch(
-        `http://import.meta.env.https://localhost:3003L/api/chats/${remoteId}`
+        `${import.meta.env.APP_BACKEND_BASEURL}/api/chats/${remoteId}`
       );
       if (!response.ok)
         throw new Error(`Error fetching chat history: ${response.statusText}`);
@@ -613,7 +611,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     try {
       const response = await fetch(
-        `http://import.meta.env.https://localhost:3003L/api/send`,
+        `${import.meta.env.APP_BACKEND_BASEURL}/api/send`,
         {
           method: "POST",
           headers: {
